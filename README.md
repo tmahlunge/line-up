@@ -7,7 +7,18 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 ### Download
 #### `git clone` this repo and run `npm install`.
 
+This will install the node packages you need to run the app.
+
+From the root directory of the `line-up` project, run:
+
+#### `pip install fastapi`
+#### `pip install "uvicorn[standard]"`
+
+These will install `fastapi` and `uvicorn`. This will allow the Python app to be deployable locally.
+
 ### Run the Python server.
+From the root directory of the `line-up` project run:
+
 #### `uvicorn server:app --reload --port 8000`
 Runs the python server to interact with REQRES and get user data.
 This server must be running in order for the React Application to extract data. 
