@@ -1,0 +1,31 @@
+.user-data-request-form {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  align-items: center;
+
+  input {
+    border: black 2px solid;
+    border-radius: 5px;
+    height: 50px;
+    width: 400px;
+    margin-bottom: 40px;
+    font-size: 32px;
+
+    &:focus {
+      outline: none;
+    }
+
+    &.invalid {
+      border-color: red;
+    }
+  }
+
+  a.invalid {
+    background: grey;
+    border-color: grey;
+    cursor: default;
+    pointer-events: none;
+  }
+}

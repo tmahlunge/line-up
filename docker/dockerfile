@@ -1,0 +1,15 @@
+#Deriving the latest base image
+FROM python:latest
+
+#Labels as key value pair
+LABEL Maintainer="tadiwa.mahlunge"
+
+# Set working directory
+WORKDIR usr/src/app
+
+#To COPY the remote file at working directory in container
+COPY ../server.py ./
+
+#CMD instruction should be used to run the software
+#contained by your image, along with any arguments.
+CMD [ "python", "./main.py"]
