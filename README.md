@@ -3,6 +3,10 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Steps To Run
+
+### Download
+#### `git clone` this repo and run `npm install`.
+
 ### Run the Python server.
 #### `uvicorn server:app --reload --port 8000`
 Runs the python server to interact with REQRES and get user data.
