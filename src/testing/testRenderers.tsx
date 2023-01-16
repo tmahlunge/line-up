@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, renderHook } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import type { PreloadedState } from '@reduxjs/toolkit'
 import { Provider } from 'react-redux'
 import {State} from "../state";

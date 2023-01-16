@@ -1,8 +1,8 @@
-import {useCallback, useEffect, useState} from 'react';
+import { useCallback, useEffect } from 'react';
 import * as actions from "../../../actions/actions";
 import useAction from "../../../hooks/useAction";
-import {UserDataErrorResponseBody, UserDataResponseBody} from "../../../types/types";
-import {useParams} from "react-router-dom";
+import { UserDataResponseBody } from "../../../types/types";
+import { useParams } from "react-router-dom";
 import useCachedUserData from "./useCachedUserData";
 
 const pythonServerBaseUrl = 'http://localhost:8000';
@@ -30,38 +30,37 @@ const getUserIdUrl = `${pythonServerBaseUrl}/api/users`;
  */
 const useUserDataRequest = () => {
     const { userId } = useParams();
-    const userData = useCachedUserData(userId);
-    const cacheUserData = useAction(actions.cacheUserData);
+    const { userData } = useCachedUserData(userId);
 
-    const [errorResponse, setErrorResponse] = useState<UserDataErrorResponseBody | undefined>();
-    const [loading, setLoading] = useState(true);
+    const userDataRequestSuccessful = useAction(actions.userDataRequestSuccessful);
+    const userDataRequestPending = useAction(actions.userDataRequestPending);
+    const userDataRequestError = useAction(actions.userDataRequestError);
 
     const requestUserData = useCallback(async () => {
         const url = `${getUserIdUrl}/${userId}`;
+
         try {
             const response = await fetch(url);
 
             if (!response.ok) {
                 const { statusText, status } = response;
-                setErrorResponse({ statusText, status })
+                userDataRequestError({ statusText, status })
             } else {
                 const result: UserDataResponseBody = await response.json();
-                cacheUserData(result.data)
+                userDataRequestSuccessful(result.data)
             }
         } catch (error) {
             console.error(`Caught unexpected error during GET request to ${url}`, error);
+            userDataRequestError({ statusText: String(error), status: -1 })
         }
-    }, [userId, cacheUserData, setErrorResponse])
+    }, [userId, userDataRequestSuccessful, userDataRequestError])
 
     useEffect(() => {
         if (!userData) {
-            requestUserData().then(() => setLoading(false));
-        } else {
-            setLoading(false);
+            userDataRequestPending();
+            requestUserData();
         }
-    }, [userData, userId, requestUserData]);
-
-    return { errorResponse, loading }
+    }, [userDataRequestPending, userData, requestUserData]);
 };
 
 export default useUserDataRequest;

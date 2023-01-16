@@ -7,7 +7,7 @@ import {State} from "../../../state";
  */
 const useCachedUserData = (userId: string | undefined) => {
   const userMap = useSelector((state: State) => state.userMap);
-  return userMap[Number(userId)];
+  return{ userData :userMap[Number(userId)] };
 }
 
 export default useCachedUserData;

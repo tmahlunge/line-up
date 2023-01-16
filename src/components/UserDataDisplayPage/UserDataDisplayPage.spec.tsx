@@ -1,13 +1,13 @@
-import createUserData from "../../testing/data/createUserData";
-import { renderWithStore} from "../../testing/testRenderers";
+import {renderWithStore} from "../../testing/testRenderers";
 import {UserDataResponseBody} from "../../types/types";
 import createUserDataFromServer from "../../testing/data/createUserDataFromServer";
 import React from "react";
 import UserDataDisplayPage from "./UserDataDisplayPage";
 import {act, screen} from "@testing-library/react";
-import { MemoryRouter} from "react-router-dom";
-import {State} from "../../state";
+import {MemoryRouter} from "react-router-dom";
+import {AUTHORISATION_LEVEL} from "../../state";
 import * as useUserDataRequest from "./hooks/useUserDataRequest";
+import ApplicationStateBuilder, {applicationStateBuilder} from "../../testing/builder/ApplicationStateBuilder";
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -15,14 +15,14 @@ jest.mock('react-router-dom', () => ({
 }));
 
 describe('<UserDataDisplayPage/>', () => {
-  const renderComponent = (userMap: State['userMap'] = {}) => renderWithStore(
+  let stateBuilder: ApplicationStateBuilder
+
+  const renderComponent = () => renderWithStore(
     <MemoryRouter>
       <UserDataDisplayPage/>
     </MemoryRouter>,
     {
-      preloadedState: {
-        userMap
-      }
+      preloadedState: stateBuilder.build()
     });
 
   beforeEach(  () => {
@@ -36,6 +36,8 @@ describe('<UserDataDisplayPage/>', () => {
       json: () => Promise.resolve(responseBody),
       ok: true
     } as Response;
+
+    stateBuilder = applicationStateBuilder()
 
     jest.spyOn(global, 'fetch').mockImplementation(() => Promise.resolve(response))
   })
@@ -56,7 +58,7 @@ describe('<UserDataDisplayPage/>', () => {
     expect(screen.getByText('User data for user with id: 1')).toBeInTheDocument();
     expect(screen.getByText('First name: Tad')).toBeInTheDocument();
     expect(screen.getByText('Last name: Mahlunge')).toBeInTheDocument();
-    expect(screen.getByText('Avatar Link: http://hire-tad.com/images/good-developer.png')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'avatar'})).toBeInTheDocument();
     expect(screen.getByText('Email: tadiwamahlunge@gmail.com')).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: 'Back' })).toBeInTheDocument();
@@ -88,19 +90,38 @@ describe('<UserDataDisplayPage/>', () => {
     expect(screen.queryByRole('img', { name: 'loading-spinner'})).not.toBeInTheDocument();
   });
 
-  it('does not call get request when data is already cached', async () => {
-    const cachedUserMap = {
-      1: createUserData({ id: 1,
-        firstName: 'Ted',
-        lastName: 'Smith',
-        email: 'tedsmith@gmail.com'
-      })
-    }
+  it('makes a fetch request and but only displays image, title and back button on OK response for non-admin', async () => {
+    stateBuilder.auth().setAuthorisationLevel(AUTHORISATION_LEVEL.BASIC);
 
     // We need to have an act block here to handle asynchronous setLoading state changes in the useUserDataRequest hook
     // eslint-disable-next-line testing-library/no-unnecessary-act
     await act(async () => {
-      renderComponent(cachedUserMap);
+      renderComponent();
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/users/1');
+
+    expect(screen.getByText('User data for user with id: 1')).toBeInTheDocument();
+    expect(screen.queryByText('First name: Tad')).not.toBeInTheDocument();
+    expect(screen.queryByText('Last name: Mahlunge')).not.toBeInTheDocument();
+    expect(screen.queryByText('Email: tadiwamahlunge@gmail.com')).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'avatar'})).toBeInTheDocument();
+
+    expect(screen.getByRole('link', { name: 'Back' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'loading-spinner'})).not.toBeInTheDocument();
+  });
+
+  it('does not call get request when data is already cached', async () => {
+    stateBuilder.rest().userDataRequestSuccessful(createUserDataFromServer({ id: 1,
+      first_name: 'Ted',
+      last_name: 'Smith',
+      email: 'tedsmith@gmail.com'
+    }));
+
+    // We need to have an act block here to handle asynchronous setLoading state changes in the useUserDataRequest hook
+    // eslint-disable-next-line testing-library/no-unnecessary-act
+    await act(async () => {
+      renderComponent();
     });
 
     expect(global.fetch).not.toHaveBeenCalled();
@@ -108,14 +129,14 @@ describe('<UserDataDisplayPage/>', () => {
     expect(screen.getByText('User data for user with id: 1')).toBeInTheDocument();
     expect(screen.getByText('First name: Ted')).toBeInTheDocument();
     expect(screen.getByText('Last name: Smith')).toBeInTheDocument();
-    expect(screen.getByText('Avatar Link: http://hire-tad.com/images/good-developer.png')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'avatar'})).toBeInTheDocument();
     expect(screen.getByText('Email: tedsmith@gmail.com')).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: 'Back' })).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'loading-spinner'})).not.toBeInTheDocument();
   });
 
-  it('will log an error when an unexpected error is thrown during GET request and display only a back button', async () => {
+  it('will log an error when an unexpected error is thrown during GET request and display only a back button and title', async () => {
     const error = new Error('Error');
     const consoleLogError = jest.fn();
 
@@ -132,13 +153,14 @@ describe('<UserDataDisplayPage/>', () => {
 
     expect(consoleLogError).toHaveBeenCalledWith('Caught unexpected error during GET request to http://localhost:8000/api/users/1', error);
     expect(screen.getByRole('link', { name: 'Back' })).toBeInTheDocument();
+    expect(screen.getByText('Error getting data for user with id: 1')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'loading-spinner'})).not.toBeInTheDocument();
     expect(screen.queryByText('User data for user with id: 1')).not.toBeInTheDocument();
-    expect(screen.queryByText('Error getting data for user with id: 1')).not.toBeInTheDocument();
   });
 
-  it('displays loading spinner when loading is true', () => {
-    jest.spyOn(useUserDataRequest, 'default').mockImplementation(() => ({ errorResponse: undefined, loading: true }))
+  it('displays loading spinner when rest request is pending', () => {
+    jest.spyOn(useUserDataRequest, 'default').mockImplementation(() => {});
+    stateBuilder.rest().userDataRequestPending();
 
     renderComponent();
     expect(screen.getByRole('img', { name: 'loading-spinner'})).toBeInTheDocument();
