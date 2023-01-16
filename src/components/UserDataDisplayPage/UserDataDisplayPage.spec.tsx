@@ -63,7 +63,7 @@ describe('<UserDataDisplayPage/>', () => {
     expect(screen.queryByRole('img', { name: 'loading-spinner'})).not.toBeInTheDocument();
   });
 
-  it('makes a fetch request and error page and back button on OK response', async () => {
+  it('makes a fetch request and error page and back button on non-OK response', async () => {
     const errorResponse = {
       statusText: 'User not found',
       status: 404,
