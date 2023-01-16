@@ -14,7 +14,7 @@ const DataDisplay: React.FC = () => {
     <div className="data-element">{`First name: ${userData.firstName}`}</div>
     <div className="data-element">{`Last name: ${userData.lastName}`}</div>
     <div className="data-element">{`Email: ${userData.email}`}</div>
-    <div className="data-element">{`Avatar Link: ${userData.avatar}`}</div>
+    <img src={userData.avatar} className="avatar" aria-label="avatar" alt="avatar"/>
   </> : null;
 }
 
